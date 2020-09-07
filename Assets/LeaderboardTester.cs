@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class LeaderboardTester : MonoBehaviour
 {
-    [SerializeField] bool auto;
-    [SerializeField] float time;
+    [SerializeField] bool auto = default;
+    [SerializeField] float time = default;
     [Space]
     [SerializeField] LeaderboardEntry entry = default;
     [SerializeField] List<LeaderboardEntry> usedEntries = new List<LeaderboardEntry>();
@@ -24,7 +24,7 @@ public class LeaderboardTester : MonoBehaviour
             sendTest();
         }
         if (auto && autoroutine == null)
-            StartCoroutine(autoTest());
+            autoroutine = StartCoroutine(autoTest());
     }
     IEnumerator autoTest()
     {
