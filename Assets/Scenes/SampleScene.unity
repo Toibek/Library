@@ -151,7 +151,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   auto: 1
-  time: 1
+  time: 5
   entry:
     ID: 
     Name: 
@@ -401,20 +401,20 @@ MonoBehaviour:
     Score: 0
   EnableAllTime: 1
   AllTime:
-    board: []
     Limit: 50
     DatabaseLoaded: 0
-  EnableWeekly: 0
+    board: []
+  EnableWeekly: 1
   Weekly:
-    board: []
-    Limit: 0
+    Limit: 10
     DatabaseLoaded: 0
-  EnableDaily: 0
+    board: []
+  EnableDaily: 1
   Daily:
-    board: []
-    Limit: 0
+    Limit: 3
     DatabaseLoaded: 0
-  ReverseScore: 1
+    board: []
+  ReverseScore: 0
   databaseUrl: https://toibektest.firebaseio.com/
   IncludeProductName: 1
   IncludeVersion: 1

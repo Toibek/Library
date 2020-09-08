@@ -15,25 +15,25 @@ using UnityEditor;
 
 public class LeaderboardManager : MonoBehaviour
 {
-    public bool sendScore;
     public LeaderboardEntry playerEntry;
-    public LeaderboardEntry closest;
+
+    public LeaderboardEntry playerHigh;
+    public LeaderboardEntry closestAllTime;
+    public LeaderboardEntry closestWeekly;
+    public LeaderboardEntry closestDaily;
 
     DatabaseReference userRef;
 
     [Header("Leaderboards")]
 
     public bool EnableAllTime;
-    internal bool ShowAllTime;
     public Leaderboard AllTime;
 
     public bool EnableWeekly;
-    internal bool ShowWeekly;
     public Leaderboard Weekly;
 
 
     public bool EnableDaily;
-    internal bool ShowDaily;
     public Leaderboard Daily;
 
     [Header("Global Settings")]
@@ -57,6 +57,9 @@ public class LeaderboardManager : MonoBehaviour
             Instance = this;
             DontDestroyOnLoad(gameObject);
 
+            //This area serves to prepare the connections with the database and fetch from it.
+            #region LBInit
+            //Loads up your last sent entry
             string save = PlayerPrefs.GetString("LeaderboardSave");
             if (save != "")
             {
@@ -64,11 +67,12 @@ public class LeaderboardManager : MonoBehaviour
                 playerEntry = new LeaderboardEntry(saveArr[0], saveArr[1], float.Parse(saveArr[2]));
             }
 
-
+            //setting default instance
             FirebaseApp.DefaultInstance.SetEditorDatabaseUrl(databaseUrl);
-
+            //Get the user reference to keep everyones latest score
             userRef = FirebaseDatabase.DefaultInstance.GetReference(Application.productName + "/Users");
 
+            //Set up the base reference based on the settings
             string baseRef = "";
             if (IncludeProductName && IncludeVersion)
                 baseRef = Application.productName + "/" + Application.version.ToString().Replace('.', ',') + "/";
@@ -77,14 +81,15 @@ public class LeaderboardManager : MonoBehaviour
             else if (IncludeVersion)
                 baseRef = Application.version.ToString().Replace('.', ',') + "/";
 
-            Clean.log(baseRef);
-
+            //Set up each leaderboards reference and set up their connections and runs the initial fetch
             if (EnableAllTime)
             {
                 string allTimeId = baseRef + "1,AllTime";
                 AllTime.DbRef = FirebaseDatabase.DefaultInstance.GetReference(allTimeId);
-                //AllTime.Fetch();
-                AllTime.DbRef.ValueChanged += AllTime.Update;
+                AllTime.AddChild();
+                AllTime.DbRef.ChildChanged += AllTime.ChangeChild;
+                AllTime.DbRef.ChildAdded += AllTime.AddChild;
+                AllTime.DbRef.ChildRemoved += AllTime.RemoveChild;
             }
             if (EnableWeekly)
             {
@@ -98,16 +103,21 @@ public class LeaderboardManager : MonoBehaviour
                 #endregion
                 string weekId = baseRef + "2,Weekly/" + DateTime.Now.Year + "," + week.ToString();
                 Weekly.DbRef = FirebaseDatabase.DefaultInstance.GetReference(weekId);
-                //Weekly.Fetch();
-                Weekly.DbRef.ValueChanged += Weekly.Update;
+                Weekly.AddChild();
+                Weekly.DbRef.ChildChanged += Weekly.ChangeChild;
+                Weekly.DbRef.ChildAdded += Weekly.AddChild;
+                Weekly.DbRef.ChildRemoved += Weekly.RemoveChild;
             }
             if (EnableDaily)
             {
                 string dayId = baseRef + "3,Daily/" + DateTime.Now.Year + "," + DateTime.Now.DayOfYear;
                 Daily.DbRef = FirebaseDatabase.DefaultInstance.GetReference(dayId);
-                //Daily.Fetch();
-                Daily.DbRef.ValueChanged += Daily.Update;
+                Daily.AddChild();
+                Daily.DbRef.ChildChanged += Daily.ChangeChild;
+                Daily.DbRef.ChildAdded += Daily.AddChild;
+                Daily.DbRef.ChildRemoved += Daily.RemoveChild;
             }
+            #endregion
         }
         else
         {
@@ -121,21 +131,26 @@ public class LeaderboardManager : MonoBehaviour
     }
     #endregion
 
-    private void Update()
-    {
-        if (sendScore)
-        {
-            sendScore = false;
-            WriteToLeaderboard();
-        }
-    }
 
+    /// <summary>
+    /// Finds your place in the leaderboard, sends your entry to the user database and saves your entry
+    /// secures to that the entry has all the required fields filled in.
+    /// </summary>
+    /// <param name="entry">The entry you want to write to the leaderboard</param>
     public void WriteToLeaderboard(LeaderboardEntry entry = null)
     {
         if (entry == null)
             entry = new LeaderboardEntry(playerEntry);
+
+        //Secures the variables on the entry
         if (entry.ID == "")
             entry.ID = userRef.Push().Key;
+        //saves it as the local entry
+        playerEntry = entry;
+        if (playerHigh == null || entry.Compare(playerHigh))
+            playerHigh = entry;
+        FindClosest(entry);
+
 
         Dictionary<string, object> childUpdates = new Dictionary<string, object>();
         childUpdates["/Name"] = entry.Name;
@@ -148,17 +163,65 @@ public class LeaderboardManager : MonoBehaviour
         if (EnableAllTime && AllTime.ActiveWrite == null)
             AllTime.ActiveWrite = StartCoroutine(AllTime.Write(entry));
         else if (EnableAllTime)
-            Debug.LogError("Failed at setting the all time leaderboard, don't do it this often");
+            Debug.LogError("Failed at setting the all time leaderboard");
 
         if (EnableWeekly && Weekly.ActiveWrite == null)
             Weekly.ActiveWrite = StartCoroutine(Weekly.Write(entry));
         else if (EnableWeekly)
-            Debug.LogError("Failed at setting the weekly leaderboard, don't do it this often");
+            Debug.LogError("Failed at setting the weekly leaderboard");
 
         if (EnableDaily && Daily.ActiveWrite == null)
             Daily.ActiveWrite = StartCoroutine(Daily.Write(entry));
         else if (EnableDaily)
-            Debug.LogError("Failed at setting the daily leaderboard, don't do it this often");
+            Debug.LogError("Failed at setting the daily leaderboard");
+    }
+    /// <summary>
+    /// Finds the nearest entries in each of the leaderboards and outputs it to the three closest variables
+    /// </summary>
+    /// <param name="entry">The entry that you want to compare to the leaderboard</param>
+    public void FindClosest(LeaderboardEntry entry = null)
+    {
+        if (entry == null)
+            entry = playerHigh;
+        for (int i = 0; i < AllTime.board.Count; i++)
+        {
+            if (entry.Compare(AllTime.board[i]))
+            {
+                if (i == 0)
+                    closestAllTime = new LeaderboardEntry("NaN", "You", playerEntry.Score);
+                else
+                    closestAllTime = AllTime.board[Mathf.Clamp(i - 1, 0, AllTime.board.Count)];
+                break;
+            }
+            if (i == AllTime.board.Count - 1)
+                closestAllTime = AllTime.board[i];
+        }
+        for (int i = 0; i < Weekly.board.Count; i++)
+        {
+            if (entry.Compare(Weekly.board[i]))
+            {
+                if (i == 0)
+                    closestWeekly = new LeaderboardEntry("NaN", "You", playerEntry.Score);
+                else
+                    closestWeekly = Weekly.board[Mathf.Clamp(i - 1, 0, Weekly.board.Count)];
+                break;
+            }
+            if (i == Weekly.board.Count - 1)
+                closestWeekly = Weekly.board[i];
+        }
+        for (int i = 0; i < Daily.board.Count; i++)
+        {
+            if (entry.Compare(Daily.board[i]))
+            {
+                if (i == 0)
+                    closestDaily = new LeaderboardEntry("NaN", "You", playerEntry.Score);
+                else
+                    closestDaily = Daily.board[Mathf.Clamp(i - 1, 0, Daily.board.Count)];
+                break;
+            }
+            if (i == Daily.board.Count - 1)
+                closestDaily = Daily.board[i];
+        }
     }
 }
 [System.Serializable]
@@ -181,73 +244,109 @@ public class LeaderboardEntry : object
     }
     public bool Compare(LeaderboardEntry other)
     {
-        return Score > other.Score;
+        if (!LeaderboardManager.Instance.ReverseScore)
+            return Score > other.Score;
+        else
+            return Score < other.Score;
     }
 }
 [System.Serializable]
 public class Leaderboard : object
 {
-    public List<LeaderboardEntry> board = new List<LeaderboardEntry>();
-
     public int Limit;
-
-    public DatabaseReference DbRef;
-    public DataSnapshot Snapshot;
     public bool DatabaseLoaded = false;
+    public List<LeaderboardEntry> board = new List<LeaderboardEntry>();
+    internal Coroutine ActiveWrite;
 
-
+    internal DatabaseReference DbRef;
     string idToFind;
-    public void Fetch(object sender = null, ValueChangedEventArgs args = null)
-    {
-        DatabaseLoaded = false;
-        DbRef.GetValueAsync().ContinueWith(task =>
-        {
-            if (task.IsCompleted)
-            {
-                Snapshot = task.Result;
-                board = new List<LeaderboardEntry>();
-                foreach (var item in Snapshot.Children)
-                {
-                    board.Add(
-                        new LeaderboardEntry(
-                            item.Key,
-                            item.Child("Name").Value.ToString(),
-                            float.Parse(item.Child("Score").Value.ToString())));
-                }
-                board.Sort(SortByScore);
-                DatabaseLoaded = true;
-                Clean.log("Loaded Database");
-            }
-            else
-                Debug.LogWarning(task.Exception);
-        });
-    }
-    public void Update(object sender = null, ValueChangedEventArgs args = null)
+
+    /// <summary>
+    /// Recieves updates from the database and sets them into the leaderboard
+    /// </summary>
+    /// <param name="sender">Unused but required</param>
+    /// <param name="args">The changes made</param>
+    public void ChangeChild(object sender = null, ChildChangedEventArgs args = null)
     {
         if (args != null)
         {
-        DataSnapshot snapshot = args.Snapshot;
-            foreach (var item in snapshot.Children)
-            {
-                int old = -1;
-                idToFind = item.Key;
-                old = board.FindIndex(FindByID);
-                if (old != -1)
-                    board.RemoveAt(old);
+            DataSnapshot snapshot = args.Snapshot;
 
-                board.Add(
-                    new LeaderboardEntry(
-                        item.Key,
-                        item.Child("Name").Value.ToString(),
-                        float.Parse(item.Child("Score").Value.ToString())
-                ));
-            }
+            int old = -1;
+            idToFind = snapshot.Key;
+            old = board.FindIndex(FindByID);
+            if (old != -1)
+                board.RemoveAt(old);
+
+            board.Add(
+                new LeaderboardEntry(
+                    snapshot.Key,
+                    snapshot.Child("Name").Value.ToString(),
+                    float.Parse(snapshot.Child("Score").Value.ToString())
+            ));
+
             board.Sort(SortByScore);
             DatabaseLoaded = true;
-            Clean.log("Loaded Database");
         }
     }
-    public Coroutine ActiveWrite;
+
+    /// <summary>
+    /// Recieves updates from the database and sets them into the leaderboard
+    /// </summary>
+    /// <param name="sender">Unused but required</param>
+    /// <param name="args">The changes made</param>
+    public void AddChild(object sender = null, ChildChangedEventArgs args = null)
+    {
+        if (args != null)
+        {
+            DataSnapshot snapshot = args.Snapshot;
+
+            int old = -1;
+            idToFind = snapshot.Key;
+
+            old = board.FindIndex(FindByID);
+            if (old != -1)
+                board.RemoveAt(old);
+
+            board.Add(
+                new LeaderboardEntry(
+                    snapshot.Key,
+                    snapshot.Child("Name").Value.ToString(),
+                    float.Parse(snapshot.Child("Score").Value.ToString())
+            ));
+
+
+            board.Sort(SortByScore);
+            DatabaseLoaded = true;
+        }
+        else
+            DatabaseLoaded = true;
+    }
+
+    /// <summary>
+    /// Recieves updates from the database and sets them into the leaderboard
+    /// </summary>
+    /// <param name="sender">Unused but required</param>
+    /// <param name="args">The changes made</param>
+    public void RemoveChild(object sender = null, ChildChangedEventArgs args = null)
+    {
+        if (args != null)
+        {
+            DataSnapshot snapshot = args.Snapshot;
+
+            idToFind = snapshot.Key;
+            board.RemoveAt(board.FindIndex(FindByID));
+
+            board.Sort(SortByScore);
+            DatabaseLoaded = true;
+        }
+    }
+
+    /// <summary>
+    /// Ienumerator that compares and writes the entry to the leaderboard
+    /// </summary>
+    /// <param name="entry">The entry to write</param>
+    /// <returns></returns>
     public IEnumerator Write(LeaderboardEntry entry)
     {
         while (!DatabaseLoaded)
@@ -259,80 +358,43 @@ public class Leaderboard : object
         early = board.FindIndex(FindByID);
         if (early != -1)
         {
+
             if (board[early].Compare(entry))
             {
-                Debug.Log("Lower than old score");
                 DatabaseLoaded = true;
             }
             else
             {
-                Debug.Log("Replacing old score");
                 board.RemoveAt(early);
-                board.Add(entry);
+                for (int i = 0; i <= early; i++)
+                {
+                    if (entry.Compare(board[i]))
+                    {
+                        board.Insert(i, entry);
+                        break;
+                    }
+                }
             }
         }
         else
         {
-            Debug.Log("Setting new score");
+            bool placed = false;
+            for (int i = 0; i < board.Count; i++)
+            {
+                if (entry.Compare(board[i]))
+                {
+                    board.Insert(i, entry);
+                    placed = true;
+                    break;
+                }
+            }
 
-            if (board.Count < Limit || Limit == 0)
+            if (!placed && board.Count < Limit || Limit == 0)
                 board.Add(entry);
-            else
+            else if(!placed)
                 DatabaseLoaded = true;
         }
         board.Sort(SortByScore);
-        #region oldversion
-        //bool leftScore = false;
-        //if (board.Count > 0)
-        //{
-        //    for (int i = 0; i < board.Count; i++)
-        //    {
-        //        if (!leftScore)
-        //        {
-        //            if (entry.Compare(board[i]) && entry.ID == board[i].ID)
-        //            {
-        //                Clean.log(entry.Name + ": Replacing my top score");
-        //                board[i] = entry;
-        //                leftScore = true;
-        //                continue;
-        //            }
-        //            else if (entry.Compare(board[i]))
-        //            {
-        //                Clean.log(entry.Name + ": Placing above: " + i.ToString());
-        //                board.Insert(i, entry);
-        //                leftScore = true;
-        //                continue;
-        //            }
-        //            else if (entry.ID == board[i].ID)
-        //            {
-        //                Clean.log(entry.Name + ": Found duplicate, getting ignored");
-        //                DatabaseLoaded = true;
-        //                leftScore = true;
-        //                break;
-        //            }
-        //        }
-        //        else
-        //        {
-        //            if (entry.ID == board[i].ID)
-        //            {
-        //                Clean.log(entry.Name + ": Found duplicate at lower pos");
-        //                DatabaseLoaded = false;
-        //                board.RemoveAt(i--);
-        //            }
-        //        }
-        //    }
-        //    if (!leftScore)
-        //    {
-        //        Clean.log(entry.Name + ": Placed at bottom");
-        //        board.Add(entry);
-        //    }
-        //}
-        //else
-        //{
-        //    board.Add(entry);
-        //    Clean.log(entry.Name + ": First entry");
-        //}
-        #endregion
 
         Dictionary<string, object> entUpdates = new Dictionary<string, object>();
         for (int i = 0; i < board.Count; i++)
@@ -343,10 +405,12 @@ public class Leaderboard : object
         bool writeWait = false;
         DbRef.UpdateChildrenAsync(entUpdates).ContinueWith(task => { writeWait = true; });
 
-
-        for (int i = board.Count; i < board.Count + 10; i++)
+        if(board.Count > Limit)
         {
-            DbRef.Child(i.ToString()).RemoveValueAsync();
+            for (int i = Limit; i < board.Count; i++)
+            {
+                DbRef.Child(board[i].ID).RemoveValueAsync();
+            }
         }
 
         while (!writeWait)
@@ -354,49 +418,108 @@ public class Leaderboard : object
 
         ActiveWrite = null;
     }
+    /// <summary>
+    /// Find the entry in the board of the matching ID wich is the separated variable idToFind
+    /// </summary>
     bool FindByID(LeaderboardEntry p1)
     {
         return p1.ID == idToFind;
     }
-    public int SortByScore(LeaderboardEntry p1, LeaderboardEntry p2)
+    /// <summary>
+    /// Comparitor for the list sorting function
+    /// </summary>
+    public int SortByScore(LeaderboardEntry entry1, LeaderboardEntry entry2)
     {
         if (LeaderboardManager.Instance.ReverseScore)
-            return p1.Score.CompareTo(p2.Score);
+            return entry1.Score.CompareTo(entry2.Score);
         else
-            return -p1.Score.CompareTo(p2.Score);
+            return -entry1.Score.CompareTo(entry2.Score);
     }
 }
 #if UNITY_EDITOR
+/// <summary>
+/// Custom inspector for the leaderboard manager
+/// </summary>
 [CustomEditor(typeof(LeaderboardManager))]
 public class CustomLeaderboardInspector: Editor
 {
     bool custom = true;
     bool settings = false;
-    LeaderboardManager scr;
+
     Vector2 allScrollPos;
     Vector2 WeekScrollPos;
     Vector2 dayScrollPos;
+
+    bool ShowAllTime = true;
+    bool ShowWeekly = true;
+    bool ShowDaily = true;
+
+    LeaderboardManager scr;
+
     private void OnEnable()
     {
         scr = (LeaderboardManager)target;
     }
+    /// <summary>
+    /// Main function of the inspector
+    /// </summary>
     public override void OnInspectorGUI()
     {
+        //bool to show/hide the custom bit
         custom = EditorGUILayout.ToggleLeft("Custom Inspector",custom);
         if (custom)
         {
+            //The players entry
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Player entry:");
             EditorGUILayout.BeginHorizontal();
             scr.playerEntry.Name = EditorGUILayout.TextField(scr.playerEntry.Name);
             scr.playerEntry.Score = EditorGUILayout.FloatField(scr.playerEntry.Score);
             EditorGUILayout.EndHorizontal();
+            //Button that sends the current entry to the leaderboard
             if (GUILayout.Button("Add Entry"))
                 scr.WriteToLeaderboard(scr.playerEntry);
-
+            //Showing the highscore
+            if (scr.playerHigh != null)
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Highscore:", GUILayout.Width(125));
+                EditorGUILayout.LabelField(scr.playerHigh.Name, GUILayout.Width(125));
+                EditorGUILayout.LabelField(scr.playerHigh.Score.ToString(), GUILayout.Width(125));
+                EditorGUILayout.EndHorizontal();
+            }
+            //showing the closest in alltime
+            if (scr.closestAllTime != null)
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Closest Alltime:", GUILayout.Width(125));
+                EditorGUILayout.LabelField(scr.closestAllTime.Name, GUILayout.Width(125));
+                EditorGUILayout.LabelField(scr.closestAllTime.Score.ToString(), GUILayout.Width(125));
+                EditorGUILayout.EndHorizontal();
+            }
+            //showing the closest in weekly
+            if (scr.closestWeekly != null)
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Closest Weekly:", GUILayout.Width(125));
+                EditorGUILayout.LabelField(scr.closestWeekly.Name, GUILayout.Width(125));
+                EditorGUILayout.LabelField(scr.closestWeekly.Score.ToString(), GUILayout.Width(125));
+                EditorGUILayout.EndHorizontal();
+            }
+            //showing the closest in daily
+            if (scr.closestDaily != null)
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Closest Daily:", GUILayout.Width(125));
+                EditorGUILayout.LabelField(scr.closestDaily.Name, GUILayout.Width(125));
+                EditorGUILayout.LabelField(scr.closestDaily.Score.ToString(), GUILayout.Width(125));
+                EditorGUILayout.EndHorizontal();
+            }
             EditorGUILayout.Space();
+            //Separating based on if the game is playing, to hide the settings you're not allowed to touch
             if (!Application.isPlaying)
             {
+                //Toggeling the leaderboards and showing their specific settings
                 scr.EnableAllTime = EditorGUILayout.Toggle("Enable AllTime Leaderboard", scr.EnableAllTime);
                 if (scr.EnableAllTime)
                 {
@@ -420,7 +543,7 @@ public class CustomLeaderboardInspector: Editor
                 }
 
                 EditorGUILayout.Space();
-
+                //The settings foldout, serves to have them separated and hidden when they're not in use
                 settings = EditorGUILayout.BeginFoldoutHeaderGroup(settings, "Settings:");
                 if (settings)
                 {
@@ -434,80 +557,99 @@ public class CustomLeaderboardInspector: Editor
             }
             else
             {
-
+                //checking if leaderboard is enabled
                 if (scr.EnableAllTime)
                 {
-                    scr.ShowAllTime = EditorGUILayout.Foldout(scr.ShowAllTime, "AllTime Leaderboard");
-                    if (scr.ShowAllTime)
+                    //Basic foldout to allow you to hide it
+                    ShowAllTime = EditorGUILayout.Foldout(ShowAllTime, "AllTime Leaderboard");
+                    if (ShowAllTime)
                     {
+                        //indent the leaderboard, cause fancy
                         EditorGUI.indentLevel = 1;
 
+                        //The signifier part,
                         EditorGUILayout.BeginHorizontal();
                         EditorGUILayout.LabelField("nr.", GUILayout.Width(30));
                         EditorGUILayout.LabelField("Name:", GUILayout.Width(150));
                         EditorGUILayout.LabelField("Score:", GUILayout.Width(150));
                         EditorGUILayout.EndHorizontal();
-
-                        allScrollPos = EditorGUILayout.BeginScrollView(allScrollPos, false, false, GUILayout.Height(300));
+                        //Scrollarea setup
+                        allScrollPos = EditorGUILayout.BeginScrollView(allScrollPos, false, false, GUILayout.Height(Mathf.Clamp(21 * scr.AllTime.Limit, 0, 300)), GUILayout.Width(330));
+                        //going through all leaderboard entries and displaying them
                         for (int i = 0; i < scr.AllTime.board.Count; i++)
                         {
+                            //making the current players highscore green
+                            if(scr.playerEntry.ID == scr.AllTime.board[i].ID)
+                                GUI.contentColor = Color.green;
+                            //horizontaly displaying the entry
                             EditorGUILayout.BeginHorizontal();
-                            EditorGUILayout.LabelField(i.ToString() + ".", GUILayout.Width(30));
-                            EditorGUILayout.LabelField(scr.AllTime.board[i].Name, GUILayout.Width(150));
-                            EditorGUILayout.LabelField(scr.AllTime.board[i].Score.ToString(), GUILayout.Width(150));
+                            EditorGUILayout.LabelField((i+1).ToString() + ".", GUILayout.Width(50));
+                            EditorGUILayout.LabelField(scr.AllTime.board[i].Name, GUILayout.Width(125));
+                            EditorGUILayout.LabelField(scr.AllTime.board[i].Score.ToString(), GUILayout.Width(125));
                             EditorGUILayout.EndHorizontal();
+                            //stop being green
+                            GUI.contentColor = Color.white;
                         }
+                        //scrollarea end
                         EditorGUILayout.EndScrollView();
+                        //stop indent
                         EditorGUI.indentLevel = 0;
                     }
                     EditorGUILayout.EndFoldoutHeaderGroup();
                 }
+                //same as above, not commenting the samey stuff
                 if (scr.EnableWeekly)
                 {
-                    scr.ShowWeekly = EditorGUILayout.Foldout(scr.ShowWeekly, "Weekly Leaderboard");
-                    if (scr.ShowWeekly)
+                    ShowWeekly = EditorGUILayout.Foldout(ShowWeekly, "Weekly Leaderboard");
+                    if (ShowWeekly)
                     {
                         EditorGUI.indentLevel = 1;
                         EditorGUILayout.BeginHorizontal();
-                        EditorGUILayout.LabelField("nr.", GUILayout.Width(30));
-                        EditorGUILayout.LabelField("Name:", GUILayout.Width(150));
-                        EditorGUILayout.LabelField("Score:", GUILayout.Width(150));
+                        EditorGUILayout.LabelField("nr.", GUILayout.Width(50));
+                        EditorGUILayout.LabelField("Name:", GUILayout.Width(125));
+                        EditorGUILayout.LabelField("Score:", GUILayout.Width(125));
                         EditorGUILayout.EndHorizontal();
 
-                        WeekScrollPos = EditorGUILayout.BeginScrollView(WeekScrollPos, false, false, GUILayout.Height(300));
+                        WeekScrollPos = EditorGUILayout.BeginScrollView(WeekScrollPos, false, false, GUILayout.Height(Mathf.Clamp(21 * scr.Weekly.Limit, 0, 300)), GUILayout.Width(330));
                         for (int i = 0; i < scr.Weekly.board.Count; i++)
                         {
+                            if (scr.playerEntry.ID == scr.Weekly.board[i].ID)
+                                GUI.contentColor = Color.green;
                             EditorGUILayout.BeginHorizontal();
-                            EditorGUILayout.LabelField(i.ToString() + ".", GUILayout.Width(30));
-                            EditorGUILayout.LabelField(scr.Weekly.board[i].Name, GUILayout.Width(150));
-                            EditorGUILayout.LabelField(scr.Weekly.board[i].Score.ToString(), GUILayout.Width(150));
+                            EditorGUILayout.LabelField((i+1).ToString() + ".", GUILayout.Width(50));
+                            EditorGUILayout.LabelField(scr.Weekly.board[i].Name, GUILayout.Width(125));
+                            EditorGUILayout.LabelField(scr.Weekly.board[i].Score.ToString(), GUILayout.Width(125));
                             EditorGUILayout.EndHorizontal();
+                            GUI.contentColor = Color.white;
                         }
                         EditorGUILayout.EndScrollView();
                         EditorGUI.indentLevel = 0;
                     }
                     EditorGUILayout.EndFoldoutHeaderGroup();
                 }
+                //same as above, not commenting the samey stuff
                 if (scr.EnableDaily)
                 {
-                    scr.ShowDaily = EditorGUILayout.Foldout(scr.ShowDaily, "Daily Leaderboard");
-                    if (scr.ShowDaily)
+                    ShowDaily = EditorGUILayout.Foldout(ShowDaily, "Daily Leaderboard");
+                    if (ShowDaily)
                     {
                         EditorGUI.indentLevel = 1;
                         EditorGUILayout.BeginHorizontal();
-                        EditorGUILayout.LabelField("nr.", GUILayout.Width(30));
-                        EditorGUILayout.LabelField("Name:", GUILayout.Width(150));
-                        EditorGUILayout.LabelField("Score:", GUILayout.Width(150));
+                        EditorGUILayout.LabelField("nr.", GUILayout.Width(50));
+                        EditorGUILayout.LabelField("Name:", GUILayout.Width(125));
+                        EditorGUILayout.LabelField("Score:", GUILayout.Width(125));
                         EditorGUILayout.EndHorizontal();
-
-                        dayScrollPos = EditorGUILayout.BeginScrollView(dayScrollPos, false, false, GUILayout.Height(300));
+                        dayScrollPos = EditorGUILayout.BeginScrollView(dayScrollPos, false, false, GUILayout.Height(Mathf.Clamp(21*scr.Daily.Limit,0,300)),GUILayout.Width(330));
                         for (int i = 0; i < scr.Daily.board.Count; i++)
                         {
+                            if (scr.playerEntry.ID == scr.Daily.board[i].ID)
+                                GUI.contentColor = Color.green;
                             EditorGUILayout.BeginHorizontal();
-                            EditorGUILayout.LabelField(i.ToString() + ".", GUILayout.Width(30));
-                            EditorGUILayout.LabelField(scr.Daily.board[i].Name, GUILayout.Width(150));
-                            EditorGUILayout.LabelField(scr.Daily.board[i].Score.ToString(), GUILayout.Width(150));
+                            EditorGUILayout.LabelField((i+1).ToString() + ".", GUILayout.Width(50));
+                            EditorGUILayout.LabelField(scr.Daily.board[i].Name, GUILayout.Width(125));
+                            EditorGUILayout.LabelField(scr.Daily.board[i].Score.ToString(), GUILayout.Width(125));
                             EditorGUILayout.EndHorizontal();
+                            GUI.contentColor = Color.white;
                         }
                         EditorGUILayout.EndScrollView();
                         EditorGUI.indentLevel = 0;
@@ -518,9 +660,11 @@ public class CustomLeaderboardInspector: Editor
         }
         else
         {
+            //Show the base if it's not in custom mode
             EditorGUILayout.Space();
             base.OnInspectorGUI();
         }
+        //Mark any changes for saving
         if (GUI.changed)
             EditorUtility.SetDirty(scr);
     }
