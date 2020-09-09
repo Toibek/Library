@@ -18,6 +18,7 @@ public class LeaderboardManager : MonoBehaviour
     public LeaderboardEntry playerEntry;
 
     public LeaderboardEntry playerHigh;
+    public LeaderboardEntry closestOverall;
     public LeaderboardEntry closestAllTime;
     public LeaderboardEntry closestWeekly;
     public LeaderboardEntry closestDaily;
@@ -222,6 +223,9 @@ public class LeaderboardManager : MonoBehaviour
             if (i == Daily.board.Count - 1)
                 closestDaily = Daily.board[i];
         }
+
+        closestOverall = closestAllTime.Compare(closestWeekly) ? closestWeekly : closestAllTime;
+        closestOverall = closestOverall.Compare(closestDaily) ? closestDaily : closestOverall;
     }
 }
 [System.Serializable]
@@ -450,9 +454,9 @@ public class CustomLeaderboardInspector: Editor
     Vector2 WeekScrollPos;
     Vector2 dayScrollPos;
 
-    bool ShowAllTime = true;
-    bool ShowWeekly = true;
-    bool ShowDaily = true;
+    bool ShowAllTime;
+    bool ShowWeekly;
+    bool ShowDaily;
 
     LeaderboardManager scr;
 
@@ -486,6 +490,15 @@ public class CustomLeaderboardInspector: Editor
                 EditorGUILayout.LabelField("Highscore:", GUILayout.Width(125));
                 EditorGUILayout.LabelField(scr.playerHigh.Name, GUILayout.Width(125));
                 EditorGUILayout.LabelField(scr.playerHigh.Score.ToString(), GUILayout.Width(125));
+                EditorGUILayout.EndHorizontal();
+            }
+            //showing the closest in alltime
+            if (scr.closestOverall != null)
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Closest Overall:", GUILayout.Width(125));
+                EditorGUILayout.LabelField(scr.closestOverall.Name, GUILayout.Width(125));
+                EditorGUILayout.LabelField(scr.closestOverall.Score.ToString(), GUILayout.Width(125));
                 EditorGUILayout.EndHorizontal();
             }
             //showing the closest in alltime
