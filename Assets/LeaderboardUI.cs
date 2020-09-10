@@ -9,8 +9,7 @@ using UnityEditor;
 public class LeaderboardUI : MonoBehaviour
 {
     List<RectTransform> ClosestEntries;
-
-    public RectTransform LeaderboardView;
+    public GameObject Prefab_View;
     public GameObject Prefab_LeaderboardButton;
     public GameObject Prefab_LeaderboardEntry;
     [Header("View")]
@@ -31,6 +30,7 @@ public class LeaderboardUI : MonoBehaviour
     public Color BronzeColor = Color.red;
     public Color BasicColor = Color.clear;
 
+    RectTransform LeaderboardView;
     GameObject buttonHolder;
     List<GameObject> entries;
     float positionToSet = 0;
@@ -46,6 +46,15 @@ public class LeaderboardUI : MonoBehaviour
     LeaderboardManager LBM;
     private void Start()
     {
+        GameObject canvas = GameObject.Find("Canvas");
+        if (canvas == null || !canvas.GetComponent<Canvas>())
+        {
+            canvas = new GameObject("Canvas");
+            canvas.AddComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.AddComponent<CanvasScaler>();
+            canvas.AddComponent<GraphicRaycaster>();
+        }
+        LeaderboardView = Instantiate(Prefab_View,canvas.transform).GetComponent<RectTransform>();
         LeaderboardView.gameObject.SetActive(false);
         LBM = LeaderboardManager.Instance;
     }
@@ -262,16 +271,6 @@ public class LeaderboardUI : MonoBehaviour
         }
         Invoke("setScroll", 0.1f);
     }
-
-
-    enum ActiveBoard
-    {
-        All,Week,Day
-    }
-    public enum outputForm
-    {
-        Score,Time
-    }
     void setScroll()
     {
         ScrollRect scroll = LeaderboardView.GetComponentInChildren<ScrollRect>();
@@ -280,23 +279,98 @@ public class LeaderboardUI : MonoBehaviour
         scroll.velocity = Vector2.zero;
     }
 }
+    enum ActiveBoard
+    {
+        All,Week,Day
+    }
+    public enum outputForm
+    {
+        Score,Time
+    }
+
 #if UNITY_EDITOR
 [CustomEditor(typeof(LeaderboardUI))]
 public class LeaderboardUIEditor : Editor
 {
     LeaderboardUI scr;
+    bool custom = true;
+
+    bool showView;
+    bool showButtons;
+    bool showEntries = true;
+
+
     private void OnEnable()
     {
         scr = (LeaderboardUI)target;
     }
     public override void OnInspectorGUI()
     {
-        if (GUILayout.Button("Toggle"))
-            scr.ToggleLeaderboard();
+        GUIStyle centeredText = new GUIStyle(GUI.skin.GetStyle("Label"));
+        centeredText.alignment = TextAnchor.MiddleCenter;
 
-        base.OnInspectorGUI();
+
+        custom = EditorGUILayout.ToggleLeft("Custom Editor", custom);
+        if (custom)
+        {
+            if (GUILayout.Button("Toggle Leaderboard"))
+                scr.ToggleLeaderboard();
+
+            showView = EditorGUILayout.Foldout(showView,"View Animation");
+            EditorGUI.indentLevel = 1;
+            if (showView)
+            {
+                GUILayout.BeginHorizontal();
+                EditorGUIUtility.labelWidth = 40;
+                scr.startpos = EditorGUILayout.Vector2Field("Start:",scr.startpos);
+                scr.endPos = EditorGUILayout.Vector2Field("End:", scr.endPos);
+                EditorGUIUtility.labelWidth = default;
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                scr.moveTime = EditorGUILayout.FloatField(scr.moveTime);
+                scr.moveCurve = EditorGUILayout.CurveField(scr.moveCurve);
+                GUILayout.EndHorizontal();
+            }
+            EditorGUI.indentLevel = 0;
+
+            showButtons = EditorGUILayout.Foldout(showButtons, "Button Settings");
+            EditorGUI.indentLevel = 1;
+            if (showButtons)
+            {
+                EditorGUILayout.LabelField("Button names",centeredText);
+                GUILayout.BeginHorizontal();
+                scr.AllName = EditorGUILayout.TextField(scr.AllName);
+                scr.WeekName = EditorGUILayout.TextField(scr.WeekName);
+                scr.DayName = EditorGUILayout.TextField(scr.DayName);
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                EditorGUIUtility.labelWidth = 80;
+                scr.ActiveColor = EditorGUILayout.ColorField("Selected:",scr.ActiveColor);
+                scr.InactiveColor = EditorGUILayout.ColorField("Inactive:",scr.InactiveColor);
+                EditorGUIUtility.labelWidth = default;
+                GUILayout.EndHorizontal();
+            }
+            EditorGUI.indentLevel = 0;
+
+            showEntries = EditorGUILayout.Foldout(showEntries, "Entry Settings");
+            EditorGUI.indentLevel = 1;
+            if (showEntries)
+            {
+                scr.OutputFormat = (outputForm)EditorGUILayout.EnumPopup("Score Format",scr.OutputFormat);
+                EditorGUILayout.LabelField("Placement Colors",centeredText);
+                EditorGUILayout.BeginHorizontal();
+                scr.GoldColor = EditorGUILayout.ColorField(scr.GoldColor);
+                scr.SilverColor = EditorGUILayout.ColorField(scr.SilverColor);
+                scr.BronzeColor = EditorGUILayout.ColorField(scr.BronzeColor);
+                scr.BasicColor = EditorGUILayout.ColorField(scr.BasicColor);
+                EditorGUILayout.EndHorizontal();
+            }
+            EditorGUI.indentLevel = 0;
+        }
+        else
+            base.OnInspectorGUI();
     }
 }
-
 #endif
 

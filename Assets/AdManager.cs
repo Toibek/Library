@@ -4,8 +4,9 @@ using UnityEngine;
 using UnityEngine.Advertisements;
 #if UNITY_EDITOR
 using UnityEditor;
+using UnityEditor.PackageManager.Requests;
+using UnityEditor.PackageManager;
 #endif
-
 public class AdManager : MonoBehaviour, IUnityAdsListener
 {
     public bool testMode = false;
@@ -34,6 +35,7 @@ public class AdManager : MonoBehaviour, IUnityAdsListener
 #elif UNITY_ANDROID
             Advertisement.Initialize(androidGameID, testMode);
 #endif
+            if(Advertisement.isInitialized)
             DontDestroyOnLoad(gameObject);
         }
     }
@@ -159,19 +161,39 @@ public class AdManager : MonoBehaviour, IUnityAdsListener
 }
 #region CustomInspector
 #if UNITY_EDITOR
+
+
 [CustomEditor(typeof(AdManager))]
 [CanEditMultipleObjects]
 public class AdManagerInspector : Editor
 {
     AdManager mng;
+    ListRequest Request;
     private void OnEnable()
     {
+        Request = Client.List();
+        EditorApplication.update += Progress;
         mng = (AdManager)target;
+    }
+    public void Progress()
+    {
+        if (Request.IsCompleted)
+        {
+               if (Request.Status == StatusCode.Success)
+                   foreach (var package in Request.Result)
+                       Debug.Log(package.name);
+               else if (Request.Status >= StatusCode.Failure)
+                   Debug.Log(Request.Error.message);
+
+               EditorApplication.update -= Progress;
+        }
     }
     public override void OnInspectorGUI()
     {
+        
+#if UNITY_ADS
         EditorGUILayout.HelpBox("Remember to also check the Ads option in Services", MessageType.Info);
-
+#endif
         mng.testMode = EditorGUILayout.Toggle("Test mode:", mng.testMode);
         EditorGUILayout.Space(1);
 
@@ -211,6 +233,7 @@ public class AdManagerInspector : Editor
         {
             EditorUtility.SetDirty(this);
             EditorUtility.SetDirty(target);
+            
         }
 
     }
