@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEditor.PackageManager.Requests;
 using UnityEditor.PackageManager;
 #endif
+[System.Serializable]
 public class AdManager : MonoBehaviour, IUnityAdsListener
 {
     public bool testMode = false;
@@ -177,16 +178,16 @@ public class AdManagerInspector : Editor
     }
     public void Progress()
     {
-        if (Request.IsCompleted)
-        {
-               if (Request.Status == StatusCode.Success)
-                   foreach (var package in Request.Result)
-                       Debug.Log(package.name);
-               else if (Request.Status >= StatusCode.Failure)
-                   Debug.Log(Request.Error.message);
+        //if (Request.IsCompleted)
+        //{
+        //       if (Request.Status == StatusCode.Success)
+        //           foreach (var package in Request.Result)
+        //               Debug.Log(package.name);
+        //       else if (Request.Status >= StatusCode.Failure)
+        //           Debug.Log(Request.Error.message);
 
-               EditorApplication.update -= Progress;
-        }
+        //       EditorApplication.update -= Progress;
+        //}
     }
     public override void OnInspectorGUI()
     {
