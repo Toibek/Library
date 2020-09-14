@@ -34,6 +34,12 @@
       },
       "url": "https://unityregistry-pa.googleapis.com"
     },
+    "com.unity.2d.sprite": {
+      "version": "1.0.0",
+      "depth": 0,
+      "source": "builtin",
+      "dependencies": {}
+    },
     "com.unity.ads": {
       "version": "3.4.7",
       "depth": 0,

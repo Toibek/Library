@@ -227,13 +227,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.41960785, g: 0.50980395, b: 0.41960785, a: 1}
   m_RaycastTarget: 1
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+  m_Sprite: {fileID: 21300000, guid: fec8dcc6918c7644e971e722b588e855, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -294,8 +294,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8798a0148469b340975a4e05543ba70, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  auto: 0
-  time: 2
+  auto: 1
+  time: 5
   entry:
     ID: 
     Name: 
@@ -649,71 +649,7 @@ MonoBehaviour:
   - Name: Main
     EnableAllTime: 1
     AllTime:
-      Limit: 100
-      DatabaseLoaded: 0
-      board: []
-    EnableWeekly: 1
-    Weekly:
-      Limit: 50
-      DatabaseLoaded: 0
-      board: []
-    EnableDaily: 1
-    Daily:
-      Limit: 10
-      DatabaseLoaded: 0
-      board: []
-    closestOverall:
-      ID: 
-      Name: 
-      Score: 0
-    closestAllTime:
-      ID: 
-      Name: 
-      Score: 0
-    closestWeekly:
-      ID: 
-      Name: 
-      Score: 0
-    closestDaily:
-      ID: 
-      Name: 
-      Score: 0
-  - Name: Endless
-    EnableAllTime: 1
-    AllTime:
-      Limit: 100
-      DatabaseLoaded: 0
-      board: []
-    EnableWeekly: 1
-    Weekly:
-      Limit: 50
-      DatabaseLoaded: 0
-      board: []
-    EnableDaily: 1
-    Daily:
-      Limit: 10
-      DatabaseLoaded: 0
-      board: []
-    closestOverall:
-      ID: 
-      Name: 
-      Score: 0
-    closestAllTime:
-      ID: 
-      Name: 
-      Score: 0
-    closestWeekly:
-      ID: 
-      Name: 
-      Score: 0
-    closestDaily:
-      ID: 
-      Name: 
-      Score: 0
-  - Name: Classic
-    EnableAllTime: 1
-    AllTime:
-      Limit: 100
+      Limit: 200
       DatabaseLoaded: 0
       board: []
     EnableWeekly: 1
@@ -772,13 +708,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f965b3e681c3c3f47835f956313ec0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Prefab_Select: {fileID: 474438656978927118, guid: 7927f44937b753f408e0ecf425f06f34,
+  Prefab_Select: {fileID: 474438656978927118, guid: e24842cb2a6b3c24aa29e91d790735a3,
     type: 3}
-  Prefab_View: {fileID: 3649109669318945007, guid: e215f8dce164f2547aeb69a1e2adee08,
+  Prefab_View: {fileID: 3649109669318945007, guid: d52120aa71b55784a81806299b4b11c6,
     type: 3}
-  Prefab_Button: {fileID: 511621770261719051, guid: 608918f99b9e11248bf0d59113a8f4a8,
+  Prefab_Button: {fileID: 511621770261719051, guid: ff3b9171baab958499e55f4ca664d94c,
     type: 3}
-  Prefab_Entry: {fileID: 8855109535866750942, guid: 3ac6ed464b431b247927bc608bf8ccce,
+  Prefab_Entry: {fileID: 8855109535866750942, guid: eebfa73d879eae3468995130245e5a15,
     type: 3}
   startpos: {x: 250, y: 0}
   endPos: {x: 0, y: 0}
