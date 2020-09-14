@@ -9,9 +9,10 @@ using UnityEditor;
 public class LeaderboardUI : MonoBehaviour
 {
     List<RectTransform> ClosestEntries;
+    public GameObject Prefab_Select;
     public GameObject Prefab_View;
-    public GameObject Prefab_LeaderboardButton;
-    public GameObject Prefab_LeaderboardEntry;
+    public GameObject Prefab_Button;
+    public GameObject Prefab_Entry;
     [Header("View")]
     public Vector2 startpos = new Vector2(250,0);
     public Vector2 endPos = Vector2.zero;
@@ -29,9 +30,14 @@ public class LeaderboardUI : MonoBehaviour
     public Color SilverColor = Color.gray;
     public Color BronzeColor = Color.red;
     public Color BasicColor = Color.clear;
+    
+    LeaderboardManager LBM;
+    LeaderboardGroup OpenGroup;
 
+    RectTransform SelectView;
     RectTransform LeaderboardView;
-    GameObject buttonHolder;
+
+    GameObject viewButtonHolder;
     List<GameObject> entries;
     float positionToSet = 0;
 
@@ -42,8 +48,6 @@ public class LeaderboardUI : MonoBehaviour
     ActiveBoard activeLeaderboard = ActiveBoard.All;
 
     Coroutine movingRoutine;
-    bool open = false;
-    LeaderboardManager LBM;
     private void Start()
     {
         GameObject canvas = GameObject.Find("Canvas");
@@ -56,123 +60,218 @@ public class LeaderboardUI : MonoBehaviour
         }
         LeaderboardView = Instantiate(Prefab_View,canvas.transform).GetComponent<RectTransform>();
         LeaderboardView.gameObject.SetActive(false);
+
+        SelectView = Instantiate(Prefab_Select, canvas.transform).GetComponent<RectTransform>();
+        SelectView.gameObject.SetActive(false);
+
         LBM = LeaderboardManager.Instance;
     }
-    public void ToggleLeaderboard()
+    public void OpenSelect()
     {
-        if (open)
-            CloseLeaderboard();
-        else
-            OpenLeaderboard();
+        if (movingRoutine == null)
+        {
+            LoadSelect();
+            if (LeaderboardView.gameObject.activeInHierarchy)
+                movingRoutine = StartCoroutine(Replacing(LeaderboardView,SelectView));
+            else
+                movingRoutine = StartCoroutine(Opening(SelectView));
+        }
     }
     public void OpenLeaderboard()
     {
-        if (movingRoutine == null && !open) 
-        {
-            if (LBM == null)
-                LBM = LeaderboardManager.Instance;
-
-            if((LBM.EnableAllTime ? 1 : 0) + (LBM.EnableWeekly ? 1 : 0) + (LBM.EnableDaily ? 1 : 0) == 1)
-            {
-                if(buttonHolder == null)
-                    buttonHolder = LeaderboardView.GetComponentInChildren<HorizontalLayoutGroup>().gameObject;
-                buttonHolder.SetActive(false);
-            }
-            else
-            {
-                if (buttonHolder == null)
-                    buttonHolder = LeaderboardView.GetComponentInChildren<HorizontalLayoutGroup>().gameObject;
-                buttonHolder.SetActive(true);
-            }
-            for (int i = buttonHolder.transform.childCount - 1; i >= 0; i--)
-            {
-                Destroy(buttonHolder.transform.GetChild(i).gameObject);
-            }
-
-            if(LBM.EnableAllTime)
-            {
-                Button but = Instantiate(Prefab_LeaderboardButton, buttonHolder.transform).GetComponent<Button>();
-                but.GetComponentInChildren<Text>().text = AllName;
-                but.onClick.AddListener(() => loadBoard(0));
-                but.GetComponent<Image>().color = ActiveColor;
-                allBut = but;
-            }
-            if(LBM.EnableWeekly)
-            {
-
-                Button but = Instantiate(Prefab_LeaderboardButton, buttonHolder.transform).GetComponent<Button>();
-                but.GetComponentInChildren<Text>().text = WeekName;
-                but.onClick.AddListener(() => loadBoard(1));
-                weekBut = but;
-
-                if (!LBM.EnableAllTime)
-                {
-                    activeLeaderboard = ActiveBoard.Week;
-                    but.GetComponent<Image>().color = ActiveColor;
-                }
-            }
-            if(LBM.EnableDaily)
-            {
-
-                Button but = Instantiate(Prefab_LeaderboardButton, buttonHolder.transform).GetComponent<Button>();
-                but.GetComponentInChildren<Text>().text = DayName;
-                but.onClick.AddListener(() => loadBoard(2));
-                dayBut = but;
-
-                if (!LBM.EnableAllTime && !LBM.EnableWeekly)
-                {
-                    activeLeaderboard = ActiveBoard.Day;
-                    but.GetComponent<Image>().color = ActiveColor;
-                }
-            }
-
-            Button[] allButtons = LeaderboardView.GetComponentsInChildren<Button>();
-            allButtons[allButtons.Length-1].onClick.AddListener(()=> CloseLeaderboard());
-
-            loadBoard((int)activeLeaderboard);
-            movingRoutine = StartCoroutine(Opening());
-        }
+        if (LBM.Leaderboards.Count == 1)
+            OpenLeaderboard(LBM.Leaderboards[0]);
+        else
+            OpenSelect();
     }
-    IEnumerator Opening()
+    public void OpenLeaderboard(string name) => OpenLeaderboard(LBM.FindGroupByName(name));
+    public void OpenLeaderboard(LeaderboardGroup Board)
     {
-        LeaderboardView.gameObject.SetActive(true);
-        for (float t = 0; t < moveTime; t += Time.deltaTime)
+        if (movingRoutine == null)
         {
-            float x = (startpos.x - endPos.y) * (1-moveCurve.Evaluate(t / moveTime));
-            float y = (startpos.y - endPos.y) * (1-moveCurve.Evaluate(t / moveTime));
-            LeaderboardView.anchoredPosition = new Vector2(x,y);
-            yield return new WaitForEndOfFrame();
+            LoadLeaderboard(Board);
+            if (SelectView.gameObject.activeInHierarchy)
+                movingRoutine = StartCoroutine(Replacing(SelectView, LeaderboardView));
+            else
+                movingRoutine = StartCoroutine(Opening(LeaderboardView));
         }
-        LeaderboardView.anchoredPosition = endPos;
-
-        open = true;
-        movingRoutine = null;
     }
+    
+    
     public void CloseLeaderboard()
     {
-        if (movingRoutine == null && open)
+        if (movingRoutine == null)
         {
-            movingRoutine = StartCoroutine(Closing());
+            movingRoutine = StartCoroutine(ClosingAll());
         }
     }
-    IEnumerator Closing()
+
+    IEnumerator Opening(RectTransform rect)
+    {
+        rect.gameObject.SetActive(true);
+        for (float t = 0; t < moveTime; t += Time.deltaTime)
+        {
+            float x = (startpos.x - endPos.y) * (1 - moveCurve.Evaluate(t / moveTime));
+            float y = (startpos.y - endPos.y) * (1 - moveCurve.Evaluate(t / moveTime));
+            rect.anchoredPosition = new Vector2(x, y);
+            yield return new WaitForEndOfFrame();
+        }
+        rect.anchoredPosition = endPos;
+        movingRoutine = null;
+    }
+    IEnumerator Closing(RectTransform rect)
     {
         for (float t = 0; t < moveTime; t += Time.deltaTime)
         {
             float x = (startpos.x - endPos.y) * moveCurve.Evaluate(t / moveTime);
             float y = (startpos.y - endPos.y) * moveCurve.Evaluate(t / moveTime);
-            LeaderboardView.anchoredPosition = new Vector2(x, y);
+            rect.anchoredPosition = new Vector2(x, y);
             yield return new WaitForEndOfFrame();
         }
-        LeaderboardView.anchoredPosition = startpos;
-        LeaderboardView.gameObject.SetActive(false);
-
-        open = false;
+        rect.anchoredPosition = startpos;
+        rect.gameObject.SetActive(false);
         movingRoutine = null;
     }
-    public void loadBoard(int changeTo)
+    IEnumerator Replacing(RectTransform from,RectTransform to)
     {
-        activeLeaderboard = (ActiveBoard)changeTo;
+        to.gameObject.SetActive(true);
+        for (float t = 0; t < moveTime; t += Time.deltaTime)
+        {
+            float x = (startpos.x - endPos.y) * moveCurve.Evaluate(t / moveTime);
+            float y = (startpos.y - endPos.y) * moveCurve.Evaluate(t / moveTime);
+            from.anchoredPosition = new Vector2(x, y);
+
+            float x2 = (-startpos.x - endPos.y) * (1 - moveCurve.Evaluate(t / moveTime));
+            float y2 = (-startpos.y - endPos.y) * (1 - moveCurve.Evaluate(t / moveTime));
+            to.anchoredPosition = new Vector2(x2, y2);
+
+            yield return new WaitForEndOfFrame();
+        }
+        from.anchoredPosition = startpos;
+        to.anchoredPosition = endPos;
+        from.gameObject.SetActive(false);
+
+        movingRoutine = null;
+    }
+    IEnumerator ClosingAll()
+    {
+        if (SelectView.gameObject.activeInHierarchy)
+        {
+            for (float t = 0; t < moveTime; t += Time.deltaTime)
+            {
+                float x = (startpos.x - endPos.y) * moveCurve.Evaluate(t / moveTime);
+                float y = (startpos.y - endPos.y) * moveCurve.Evaluate(t / moveTime);
+                SelectView.anchoredPosition = new Vector2(x, y);
+                yield return new WaitForEndOfFrame();
+            }
+            SelectView.anchoredPosition = startpos;
+            SelectView.gameObject.SetActive(false);
+        }
+        if (LeaderboardView.gameObject.activeInHierarchy)
+        {
+            for (float t = 0; t < moveTime; t += Time.deltaTime)
+            {
+                float x = (startpos.x - endPos.y) * moveCurve.Evaluate(t / moveTime);
+                float y = (startpos.y - endPos.y) * moveCurve.Evaluate(t / moveTime);
+                LeaderboardView.anchoredPosition = new Vector2(x, y);
+                yield return new WaitForEndOfFrame();
+            }
+            LeaderboardView.anchoredPosition = startpos;
+            LeaderboardView.gameObject.SetActive(false);
+        }
+        movingRoutine = null;
+    }
+    void LoadLeaderboard(LeaderboardGroup Board)
+    {
+        OpenGroup = Board;
+        if ((Board.EnableAllTime ? 1 : 0) + (Board.EnableWeekly ? 1 : 0) + (Board.EnableDaily ? 1 : 0) == 1)
+        {
+            if (viewButtonHolder == null)
+                viewButtonHolder = LeaderboardView.GetComponentInChildren<HorizontalLayoutGroup>().gameObject;
+            viewButtonHolder.SetActive(false);
+        }
+        else
+        {
+            if (viewButtonHolder == null)
+                viewButtonHolder = LeaderboardView.GetComponentInChildren<HorizontalLayoutGroup>().gameObject;
+            viewButtonHolder.SetActive(true);
+        }
+        for (int i = viewButtonHolder.transform.childCount - 1; i >= 0; i--)
+        {
+            Destroy(viewButtonHolder.transform.GetChild(i).gameObject);
+        }
+
+        if (Board.EnableAllTime)
+        {
+            Button but = Instantiate(Prefab_Button, viewButtonHolder.transform).GetComponent<Button>();
+            but.GetComponentInChildren<Text>().text = AllName;
+            but.onClick.AddListener(() => ChangeBoard(0));
+            but.GetComponent<Image>().color = ActiveColor;
+            allBut = but;
+        }
+        if (Board.EnableWeekly)
+        {
+
+            Button but = Instantiate(Prefab_Button, viewButtonHolder.transform).GetComponent<Button>();
+            but.GetComponentInChildren<Text>().text = WeekName;
+            but.onClick.AddListener(() => ChangeBoard(1));
+            weekBut = but;
+
+            if (!Board.EnableAllTime)
+            {
+                activeLeaderboard = ActiveBoard.Week;
+                but.GetComponent<Image>().color = ActiveColor;
+            }
+        }
+        if (Board.EnableDaily)
+        {
+
+            Button but = Instantiate(Prefab_Button, viewButtonHolder.transform).GetComponent<Button>();
+            but.GetComponentInChildren<Text>().text = DayName;
+            but.onClick.AddListener(() => ChangeBoard(2));
+            dayBut = but;
+
+            if (!Board.EnableAllTime && !Board.EnableWeekly)
+            {
+                activeLeaderboard = ActiveBoard.Day;
+                but.GetComponent<Image>().color = ActiveColor;
+            }
+        }
+
+        Button[] allButtons = LeaderboardView.GetComponentsInChildren<Button>();
+        if (LBM.Leaderboards.Count > 1)
+        {
+            allButtons[allButtons.Length - 1].onClick.AddListener(() => OpenSelect());
+            allButtons[allButtons.Length - 1].GetComponentInChildren<Text>().text = "Back";
+        }
+        else
+        {
+            allButtons[allButtons.Length - 1].onClick.AddListener(() => CloseLeaderboard());
+            allButtons[allButtons.Length - 1].GetComponentInChildren<Text>().text = "Exit";
+        }
+
+
+        ChangeBoard((int)activeLeaderboard);
+    }
+    void LoadSelect()
+    {
+        Transform par = SelectView.GetComponentInChildren<VerticalLayoutGroup>().transform;
+        for (int i = par.childCount - 1; i >= 0; i--)
+            Destroy(par.GetChild(i).gameObject);
+
+        for (int i = 0; i < LBM.Leaderboards.Count; i++)
+        {
+            GameObject go = Instantiate(Prefab_Button, par);
+            LeaderboardGroup lb = LBM.Leaderboards[i];
+            go.GetComponentInChildren<Text>().text = lb.Name;
+            go.GetComponentInChildren<Button>().onClick.AddListener(() => OpenLeaderboard(lb));
+        }
+        Button[] allBut = SelectView.GetComponentsInChildren<Button>(true);
+        allBut[allBut.Length - 1].onClick.AddListener(() => CloseLeaderboard());
+    }
+    void ChangeBoard(int changeTo) => ChangeBoard((ActiveBoard)changeTo);
+    void ChangeBoard(ActiveBoard changeTo)
+    {
         Transform content = LeaderboardView.GetComponentInChildren<ContentSizeFitter>().transform;
         if (entries == null)
             entries = new List<GameObject>();
@@ -185,31 +284,31 @@ public class LeaderboardUI : MonoBehaviour
 
         Leaderboard current;
 
-        switch (activeLeaderboard)
+        switch (changeTo)
         {
             case ActiveBoard.All:
                 if (allBut) allBut.GetComponent<Image>().color = ActiveColor;
                 if (weekBut) weekBut.GetComponent<Image>().color = InactiveColor;
                 if (dayBut) dayBut.GetComponent<Image>().color = InactiveColor;
-                current = LBM.AllTime;
+                current = OpenGroup.AllTime;
                 break;
             case ActiveBoard.Week:
                 if (allBut) allBut.GetComponent<Image>().color = InactiveColor;
                 if (weekBut) weekBut.GetComponent<Image>().color = ActiveColor;
                 if (dayBut) dayBut.GetComponent<Image>().color = InactiveColor;
-                current = LBM.Weekly;
+                current = OpenGroup.Weekly;
                 break;
             case ActiveBoard.Day:
                 if (allBut) allBut.GetComponent<Image>().color = InactiveColor;
                 if (weekBut) weekBut.GetComponent<Image>().color = InactiveColor;
                 if (dayBut) dayBut.GetComponent<Image>().color = ActiveColor;
-                current = LBM.Daily;
+                current = OpenGroup.Daily;
                 break;
             default:
                 if (allBut) allBut.GetComponent<Image>().color = InactiveColor;
                 if (weekBut) weekBut.GetComponent<Image>().color = InactiveColor;
                 if (dayBut) dayBut.GetComponent<Image>().color = InactiveColor;
-                current = LBM.AllTime;
+                current = OpenGroup.AllTime;
                 break;
         }
 
@@ -217,7 +316,7 @@ public class LeaderboardUI : MonoBehaviour
         positionToSet = 0;
         for (int i = 0; i < current.board.Count; i++)
         {
-            GameObject go = Instantiate(Prefab_LeaderboardEntry, content);
+            GameObject go = Instantiate(Prefab_Entry, content);
             Text[] texts = go.GetComponentsInChildren<Text>();
 
             if (i == 0)
@@ -245,7 +344,7 @@ public class LeaderboardUI : MonoBehaviour
             {
                 for (int k = 0; k < texts.Length; k++)
                     texts[k].color = Color.green;
-                float height = Prefab_LeaderboardEntry.GetComponent<RectTransform>().sizeDelta.y;
+                float height = Prefab_Entry.GetComponent<RectTransform>().sizeDelta.y;
                 positionToSet = 5 + (i * height + 5);
             }
 
@@ -269,9 +368,9 @@ public class LeaderboardUI : MonoBehaviour
             entries.Add(go);
 
         }
-        Invoke("setScroll", 0.1f);
+        Invoke("SetScroll", 0.1f);
     }
-    void setScroll()
+    void SetScroll()
     {
         ScrollRect scroll = LeaderboardView.GetComponentInChildren<ScrollRect>();
         scroll.content.anchoredPosition = new Vector2(0, positionToSet);
@@ -279,7 +378,7 @@ public class LeaderboardUI : MonoBehaviour
         scroll.velocity = Vector2.zero;
     }
 }
-    enum ActiveBoard
+    public enum ActiveBoard
     {
         All,Week,Day
     }
@@ -294,6 +393,7 @@ public class LeaderboardUIEditor : Editor
 {
     LeaderboardUI scr;
     bool custom = true;
+    bool Prefabs = false;
 
     bool showView;
     bool showButtons;
@@ -313,8 +413,20 @@ public class LeaderboardUIEditor : Editor
         custom = EditorGUILayout.ToggleLeft("Custom Editor", custom);
         if (custom)
         {
-            if (GUILayout.Button("Toggle Leaderboard"))
-                scr.ToggleLeaderboard();
+            Prefabs = EditorGUILayout.Foldout(Prefabs, "Prefabs");
+            if (Prefabs)
+            {
+                scr.Prefab_Select = (GameObject)EditorGUILayout.ObjectField("Select view",scr.Prefab_Select, typeof(GameObject), false);
+                scr.Prefab_View = (GameObject)EditorGUILayout.ObjectField("Board view",scr.Prefab_View, typeof(GameObject), false);
+                scr.Prefab_Button = (GameObject)EditorGUILayout.ObjectField("Button",scr.Prefab_Button, typeof(GameObject), false);
+                scr.Prefab_Entry = (GameObject)EditorGUILayout.ObjectField("Entry",scr.Prefab_Entry, typeof(GameObject), false);
+            }
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Open Leaderboard"))
+                scr.OpenLeaderboard();
+            if (GUILayout.Button("Close Leaderboard"))
+                scr.CloseLeaderboard();
+            GUILayout.EndHorizontal();
 
             showView = EditorGUILayout.Foldout(showView,"View Animation");
             EditorGUI.indentLevel = 1;
