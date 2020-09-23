@@ -16,9 +16,7 @@ using UnityEditor;
 public class LeaderboardManager : MonoBehaviour
 {
     public LeaderboardEntry playerEntry;
-
     public LeaderboardEntry playerHigh;
-
     public List<LeaderboardGroup> Leaderboards;
 
     [Header("Settings")]
@@ -63,6 +61,10 @@ public class LeaderboardManager : MonoBehaviour
             Instance = null;
     }
     #endregion
+    /// <summary>
+    /// Adds a new leaderboard to the leaderboards list
+    /// </summary>
+    /// <param name="name"></param>
     public void AddLeaderboard(string name) 
     { 
         if (Leaderboards.Count > 0)
@@ -70,15 +72,56 @@ public class LeaderboardManager : MonoBehaviour
         else
             Leaderboards.Add(new LeaderboardGroup("Main"));
     }
+    /// <summary>
+    /// Removes a leaderboard from the leaderboards list
+    /// </summary>
+    /// <param name="group"></param>
     public void RemoveLeaderboard(LeaderboardGroup group) => Leaderboards.Remove(group);
+    public void WriteToLeaderboard(float score) => WriteToLeaderboard(playerEntry.Score = score);
+    public void WriteToLeaderboard(string leaderboard,float score) => WriteToLeaderboard(leaderboard,playerEntry.Score = score);
+    public void WriteToLeaderboard(LeaderboardGroup leaderboard, float score) => WriteToLeaderboard(leaderboard, playerEntry.Score = score);
+    /// <summary>
+    /// Writes to the primary leaderboard
+    /// </summary>
+    /// <param name="entry"></param>
     public void WriteToLeaderboard(LeaderboardEntry entry) => Leaderboards[0]?.WriteToLeaderboard(entry);
+    /// <summary>
+    /// Writes to the selected leaderboard, by name
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="entry"></param>
     public void WriteToLeaderboard(string name,LeaderboardEntry entry) => WriteToLeaderboard(FindGroupByName(name),entry);
+    /// <summary>
+    /// Writes to the selectedLeaderboard, by leaderboard
+    /// </summary>
+    /// <param name="Leaderboard"></param>
+    /// <param name="entry"></param>
     public void WriteToLeaderboard(LeaderboardGroup Leaderboard, LeaderboardEntry entry) => Leaderboard.WriteToLeaderboard(entry);
-
+    public void FindClosest(float score) => FindClosest(playerEntry.Score = score);
+    public void FindClosest(string leaderboard,float score) => FindClosest(leaderboard,playerEntry.Score = score);
+    public void FindClosest(LeaderboardGroup leaderboard,float score) => FindClosest(leaderboard,playerEntry.Score = score);
+    /// <summary>
+    /// Finds the closest entry of the primary leaderboard
+    /// </summary>
+    /// <param name="entry"></param>
     public void FindClosest(LeaderboardEntry entry) => Leaderboards[0]?.FindClosest(entry);
+    /// <summary>
+    /// Finds the closest entry of the named leaderboard
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="entry"></param>
     public void FindClosest(string name, LeaderboardEntry entry) => FindClosest(FindGroupByName(name), entry);
+    /// <summary>
+    /// Finds the closest entry in the sent leaderboard
+    /// </summary>
+    /// <param name="Leaderboard"></param>
+    /// <param name="entry"></param>
     public void FindClosest(LeaderboardGroup Leaderboard, LeaderboardEntry entry) => Leaderboard.FindClosest(entry);
-
+    /// <summary>
+    /// Finds the leaderboard by name
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
     public LeaderboardGroup FindGroupByName(string name)
     {
         for (int i = 0; i < Leaderboards.Count; i++)
@@ -88,8 +131,6 @@ public class LeaderboardManager : MonoBehaviour
         Debug.LogError("Leaderboard: " + name + " not Found");
         return null;
     }
-
-
 }
 [System.Serializable]
 public class LeaderboardEntry : object
@@ -97,18 +138,34 @@ public class LeaderboardEntry : object
     public string ID = default;
     public string Name = default;
     public float Score = default;
+
+    /// <summary>
+    /// Creates a new entry that's a copy of a old one
+    /// </summary>
+    /// <param name="old"></param>
     public LeaderboardEntry(LeaderboardEntry old)
     {
         ID = old.ID;
         Name = old.Name;
         Score = old.Score;
     }
+    /// <summary>
+    /// Creates a new entry with full control of the values
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="name"></param>
+    /// <param name="score"></param>
     public LeaderboardEntry(string id ,string name, float score)
     {
         ID = id;
         Name = name;
         Score = score;
     }
+    /// <summary>
+    /// Compare function so that you can easily compare one entry to the other by score
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
     public bool Compare(LeaderboardEntry other)
     {
         if (!LeaderboardManager.Instance.ReverseScore)
@@ -125,10 +182,16 @@ public class Leaderboard : object
     public bool DatabaseLoaded = false;
     public List<LeaderboardEntry> board = new List<LeaderboardEntry>();
     internal Coroutine ActiveWrite;
-
     internal DatabaseReference DbRef;
     string idToFind;
+    /// <summary>
+    ///Creates a new leaderboard with a set limit
+    /// </summary>
+    /// <param name="Limit"></param>
     public Leaderboard(int Limit) => this.Limit = Limit;
+    /// <summary>
+    /// Creates a new leaderboard with default settings
+    /// </summary>
     public Leaderboard() { }
     /// <summary>
     /// Recieves updates from the database and sets them into the leaderboard
@@ -158,7 +221,6 @@ public class Leaderboard : object
             DatabaseLoaded = true;
         }
     }
-
     /// <summary>
     /// Recieves updates from the database and sets them into the leaderboard
     /// </summary>
@@ -191,7 +253,6 @@ public class Leaderboard : object
         else
             DatabaseLoaded = true;
     }
-
     /// <summary>
     /// Recieves updates from the database and sets them into the leaderboard
     /// </summary>
@@ -210,7 +271,6 @@ public class Leaderboard : object
             DatabaseLoaded = true;
         }
     }
-
     /// <summary>
     /// Ienumerator that compares and writes the entry to the leaderboard
     /// </summary>
@@ -336,6 +396,9 @@ public class LeaderboardGroup : object
     internal bool ShowDaily;
 
     DatabaseReference userRef;
+    /// <summary>
+    /// Initializes the leaderboards attatched so that they're ready to use
+    /// </summary>
     public void Init()
     {
         //setting default instance
@@ -550,9 +613,6 @@ public class CustomLeaderboardInspector: Editor
     {
         scr = (LeaderboardManager)target;
     }
-    /// <summary>
-    /// Main function of the inspector
-    /// </summary>
     public override void OnInspectorGUI()
     {
         //bool to show/hide the custom bit

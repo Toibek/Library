@@ -1,0 +1,322 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3781866343019176555
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3781866343019177365}
+  - component: {fileID: 3781866343019177367}
+  - component: {fileID: 3781866343019176554}
+  - component: {fileID: 3781866343019177364}
+  - component: {fileID: 3781866343019177366}
+  m_Layer: 0
+  m_Name: FloofInternal
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3781866343019177365
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3781866343019176555}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3781866343019177367
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3781866343019176555}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 722d2d2c92320be48a140be868077111, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  testMode: 1
+  androidGameID: 3801639
+  IOSGameId: 3801638
+  videoName: video
+  rewardedName: rewardedVideo
+  minutesBeforeFirstVideo: 4
+  minutesBetweenVideos: 2
+--- !u!114 &3781866343019176554
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3781866343019176555}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b46b725d72790914ebb520710b4467ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerEntry:
+    ID: 
+    Name: 
+    Score: 0
+  playerHigh:
+    ID: 
+    Name: 
+    Score: 0
+  Leaderboards:
+  - Name: Main
+    EnableAllTime: 1
+    AllTime:
+      Limit: 200
+      DatabaseLoaded: 0
+      board: []
+    EnableWeekly: 1
+    Weekly:
+      Limit: 50
+      DatabaseLoaded: 0
+      board: []
+    EnableDaily: 1
+    Daily:
+      Limit: 10
+      DatabaseLoaded: 0
+      board: []
+    closestOverall:
+      ID: 
+      Name: 
+      Score: 0
+    closestAllTime:
+      ID: 
+      Name: 
+      Score: 0
+    closestWeekly:
+      ID: 
+      Name: 
+      Score: 0
+    closestDaily:
+      ID: 
+      Name: 
+      Score: 0
+  ReverseScore: 0
+  databaseUrl: https://toibektest.firebaseio.com/
+  IncludeProductName: 1
+  IncludeVersion: 1
+--- !u!114 &3781866343019177364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3781866343019176555}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f965b3e681c3c3f47835f956313ec0e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SelectedStyle:
+    name: Arcade
+    Prefab_Select: {fileID: 474438656978927118, guid: e24842cb2a6b3c24aa29e91d790735a3,
+      type: 3}
+    Prefab_View: {fileID: 3649109669318945007, guid: d52120aa71b55784a81806299b4b11c6,
+      type: 3}
+    Prefab_Button: {fileID: 511621770261719051, guid: ff3b9171baab958499e55f4ca664d94c,
+      type: 3}
+    Prefab_Entry: {fileID: 8855109535866750942, guid: eebfa73d879eae3468995130245e5a15,
+      type: 3}
+    startpos: {x: 250, y: 0}
+    endPos: {x: 0, y: 0}
+    moveTime: 1
+    moveCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    AllName: All time
+    WeekName: Weekly
+    DayName: Daily
+    ActiveColor: {r: 0.3019608, g: 0.3647059, b: 0.3019608, a: 1}
+    InactiveColor: {r: 0.41568628, g: 0.50980395, b: 0.41568628, a: 1}
+    OutputFormat: 0
+    GoldColor: {r: 0.86666673, g: 0.8196079, b: 0.25882354, a: 1}
+    SilverColor: {r: 0.7372549, g: 0.7372549, b: 0.7372549, a: 1}
+    BronzeColor: {r: 0.7058824, g: 0.43137258, b: 0.22352943, a: 1}
+    BasicColor: {r: 0, g: 0, b: 0, a: 0}
+  Styles:
+  - name: Basic
+    Prefab_Select: {fileID: 474438656978927118, guid: 7927f44937b753f408e0ecf425f06f34,
+      type: 3}
+    Prefab_View: {fileID: 3649109669318945007, guid: e215f8dce164f2547aeb69a1e2adee08,
+      type: 3}
+    Prefab_Button: {fileID: 511621770261719051, guid: 608918f99b9e11248bf0d59113a8f4a8,
+      type: 3}
+    Prefab_Entry: {fileID: 8855109535866750942, guid: 3ac6ed464b431b247927bc608bf8ccce,
+      type: 3}
+    startpos: {x: 250, y: 0}
+    endPos: {x: 0, y: 0}
+    moveTime: 1
+    moveCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    AllName: All time
+    WeekName: Weekly
+    DayName: Daily
+    ActiveColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+    InactiveColor: {r: 1, g: 1, b: 1, a: 1}
+    OutputFormat: 0
+    GoldColor: {r: 0.8679245, g: 0.81931865, b: 0.25792095, a: 1}
+    SilverColor: {r: 0.735849, g: 0.735849, b: 0.735849, a: 1}
+    BronzeColor: {r: 0.7075472, g: 0.43058932, b: 0.2236116, a: 1}
+    BasicColor: {r: 0, g: 0, b: 0, a: 0}
+  - name: Arcade
+    Prefab_Select: {fileID: 474438656978927118, guid: e24842cb2a6b3c24aa29e91d790735a3,
+      type: 3}
+    Prefab_View: {fileID: 3649109669318945007, guid: d52120aa71b55784a81806299b4b11c6,
+      type: 3}
+    Prefab_Button: {fileID: 511621770261719051, guid: ff3b9171baab958499e55f4ca664d94c,
+      type: 3}
+    Prefab_Entry: {fileID: 8855109535866750942, guid: eebfa73d879eae3468995130245e5a15,
+      type: 3}
+    startpos: {x: 250, y: 0}
+    endPos: {x: 0, y: 0}
+    moveTime: 1
+    moveCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    AllName: All time
+    WeekName: Weekly
+    DayName: Daily
+    ActiveColor: {r: 0.3019608, g: 0.3647059, b: 0.3019608, a: 1}
+    InactiveColor: {r: 0.41568628, g: 0.50980395, b: 0.41568628, a: 1}
+    OutputFormat: 0
+    GoldColor: {r: 0.86666673, g: 0.8196079, b: 0.25882354, a: 1}
+    SilverColor: {r: 0.7372549, g: 0.7372549, b: 0.7372549, a: 1}
+    BronzeColor: {r: 0.7058824, g: 0.43137258, b: 0.22352943, a: 1}
+    BasicColor: {r: 0, g: 0, b: 0, a: 0}
+  - name: Time Basic
+    Prefab_Select: {fileID: 474438656978927118, guid: 7927f44937b753f408e0ecf425f06f34,
+      type: 3}
+    Prefab_View: {fileID: 3649109669318945007, guid: e215f8dce164f2547aeb69a1e2adee08,
+      type: 3}
+    Prefab_Button: {fileID: 511621770261719051, guid: 608918f99b9e11248bf0d59113a8f4a8,
+      type: 3}
+    Prefab_Entry: {fileID: 8855109535866750942, guid: 3ac6ed464b431b247927bc608bf8ccce,
+      type: 3}
+    startpos: {x: 250, y: 0}
+    endPos: {x: 0, y: 0}
+    moveTime: 1
+    moveCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    AllName: All time
+    WeekName: Weekly
+    DayName: Daily
+    ActiveColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+    InactiveColor: {r: 1, g: 1, b: 1, a: 1}
+    OutputFormat: 1
+    GoldColor: {r: 0.86666673, g: 0.8196079, b: 0.25882354, a: 1}
+    SilverColor: {r: 0.7372549, g: 0.7372549, b: 0.7372549, a: 1}
+    BronzeColor: {r: 0.7058824, g: 0.43137258, b: 0.22352943, a: 1}
+    BasicColor: {r: 0, g: 0, b: 0, a: 0}
+--- !u!114 &3781866343019177366
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3781866343019176555}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f214810f518d1b4e9ccffdc621fe86d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

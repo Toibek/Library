@@ -1,0 +1,1 @@
+{"catalog":[{"id":"TestThing","type":"Consumable","name":"Coinage","store_ids":{},"price":{"apple":0.99,"google":0.99},"payouts":[{"t":"Currency","st":"","q":500,"d":""}]}]}

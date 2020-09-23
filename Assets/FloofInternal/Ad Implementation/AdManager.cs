@@ -169,25 +169,9 @@ public class AdManager : MonoBehaviour, IUnityAdsListener
 public class AdManagerInspector : Editor
 {
     AdManager mng;
-    ListRequest Request;
     private void OnEnable()
     {
-        Request = Client.List();
-        EditorApplication.update += Progress;
         mng = (AdManager)target;
-    }
-    public void Progress()
-    {
-        //if (Request.IsCompleted)
-        //{
-        //       if (Request.Status == StatusCode.Success)
-        //           foreach (var package in Request.Result)
-        //               Debug.Log(package.name);
-        //       else if (Request.Status >= StatusCode.Failure)
-        //           Debug.Log(Request.Error.message);
-
-        //       EditorApplication.update -= Progress;
-        //}
     }
     public override void OnInspectorGUI()
     {
